@@ -1265,7 +1265,7 @@ cpdef np.ndarray[uint32_t, ndim=2, mode='c'] text_to_pairs(
     # for each nsamples_per_word.  Note that this includes full windows
     # for words at end, so it slightly overestimates number of pairs
     cdef long long npairs = sum(
-        [len(doc) * half_window_size * nsamples_per_word for doc in text]
+        [2 * len(doc) * half_window_size * nsamples_per_word for doc in text]
     )
 
     # allocate pairs and draw random numbers
