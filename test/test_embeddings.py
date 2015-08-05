@@ -233,34 +233,50 @@ class TestGaussianEmbedding(unittest.TestCase):
 
 class TestTexttoPairs(unittest.TestCase):
     def test_text_to_pairs(self):
-        # mock out the random int generator
+        # mock out the random word id generator
         r = lambda N: np.arange(N, dtype=np.uint32)
+
+        # set the seed for the random context size generator
+        np.random.seed(55)
+
         text = [
-            np.array([1, 2, 3, -1, -1, 4, 5], dtype=np.uint32),
+            np.array([1, 2, 3, -1, 8, 4, 5], dtype=np.uint32),
             np.array([], dtype=np.uint32),
             np.array([10, 11], dtype=np.uint32)
         ]
         actual = text_to_pairs(text, r, nsamples_per_word=2)
-        expected = np.array([[ 1,  2,  1,  0, 0],
-           [ 1,  2,  1,  2, 1],
-           [ 1,  2,  1,  2, 0],
-           [ 1,  2,  3,  2, 1],
-           [ 1,  3,  1,  4, 0],
-           [ 1,  3,  5,  3, 1],
-           [ 1,  3,  1,  6, 0],
-           [ 1,  3,  7,  3, 1],
-           [ 2,  3,  2,  8, 0],
-           [ 2,  3,  9,  3, 1],
-           [ 2,  3,  2, 10, 0],
-           [ 2,  3, 11,  3, 1],
-           [ 4,  5,  4, 12, 0],
-           [ 4,  5, 13,  5, 1],
-           [ 4,  5,  4, 14, 0],
-           [ 4,  5, 15,  5, 1],
-           [10, 11, 10, 16, 0],
-           [10, 11, 17, 11, 1],
-           [10, 11, 10, 18, 0],
-           [10, 11, 19, 11, 1]], dtype=np.uint32)
+        expected = np.array([[ 1,  2,  1,  0,  0],
+           [ 1,  2,  1,  1,  0],
+           [ 1,  3,  1,  2,  0],
+           [ 1,  3,  1,  3,  0],
+           [ 1,  2,  4,  2,  1],
+           [ 1,  2,  5,  2,  1],
+           [ 2,  3,  2,  6,  0],
+           [ 2,  3,  2,  7,  0],
+           [ 1,  3,  8,  3,  1],
+           [ 1,  3,  9,  3,  1],
+           [ 2,  3, 10,  3,  1],
+           [ 2,  3, 11,  3,  1],
+           [ 3,  8,  3, 12,  0],
+           [ 3,  8,  3, 13,  0],
+           [ 3,  8, 14,  8,  1],
+           [ 3,  8, 15,  8,  1],
+           [ 8,  4,  8, 16,  0],
+           [ 8,  4,  8, 17,  0],
+           [ 8,  5,  8, 18,  0],
+           [ 8,  5,  8, 19,  0],
+           [ 8,  4, 20,  4,  1],
+           [ 8,  4, 21,  4,  1],
+           [ 4,  5,  4, 22,  0],
+           [ 4,  5,  4, 23,  0],
+           [ 8,  5, 24,  5,  1],
+           [ 8,  5, 25,  5,  1],
+           [ 4,  5, 26,  5,  1],
+           [ 4,  5, 27,  5,  1],
+           [10, 11, 10, 28,  0],
+           [10, 11, 10, 29,  0],
+           [10, 11, 30, 11,  1],
+           [10, 11, 31, 11,  1]], dtype=np.uint32)
         self.assertTrue((actual == expected).all())
 
 

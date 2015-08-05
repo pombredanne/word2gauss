@@ -1265,18 +1265,22 @@ cpdef np.ndarray[uint32_t, ndim=2, mode='c'] text_to_pairs(
     # for each nsamples_per_word.  Note that this includes full windows
     # for words at end, so it slightly overestimates number of pairs
     cdef long long npairs = sum(
-        [2 * len(doc) * half_window_size * nsamples_per_word for doc in text]
+        [len(doc) * half_window_size * nsamples_per_word for doc in text]
     )
 
     # allocate pairs and draw random numbers
     cdef np.ndarray[uint32_t, ndim=2, mode='c'] pairs = np.empty(
         (npairs, 5), dtype=np.uint32)
     cdef np.ndarray[uint32_t] randids = random_gen(npairs)
+    cdef np.ndarray[uint32_t] rand_window_sizes = np.random.randint(
+        1, half_window_size + 1, npairs).astype(np.uint32)
+
     cdef np.ndarray[uint32_t, ndim=1, mode='c'] cdoc
 
     cdef size_t next_pair = 0  # index of next pair to write
-    cdef size_t i, j, k
+    cdef size_t i, j, k, start
     cdef uint32_t doc_len
+    cdef uint32_t this_window_size
 
     for doc in text:
         cdoc = doc
@@ -1285,27 +1289,38 @@ cpdef np.ndarray[uint32_t, ndim=2, mode='c'] text_to_pairs(
             if cdoc[i] == -1:
                 # OOV word
                 continue
-            for j in range(i + 1, min(i + half_window_size + 1, doc_len)):
-                if cdoc[j] == -1:
-                    # OOV word
+
+            # get the randomly sampled size for this context window
+            this_window_size = rand_window_sizes[next_pair]
+
+            # get the starting index for context window
+            # need to be careful of underflow
+            if i < this_window_size:
+                start = 0
+            else:
+                start = i - this_window_size
+
+            for j in range(start, min(i + this_window_size + 1, doc_len)):
+                if j == i or cdoc[j] == -1:
+                    # context word is center word or context word is OOV
                     continue
+
                 # take nsamples_per_word samples
                 # we ignore handling the case where sample is i or j, for now
                 for k in range(nsamples_per_word):
-                    # sample j
-                    pairs[next_pair, 0] = cdoc[i]
-                    pairs[next_pair, 1] = cdoc[j]
-                    pairs[next_pair, 2] = cdoc[i]
-                    pairs[next_pair, 3] = randids[next_pair]
-                    pairs[next_pair, 4] = 0
-                    next_pair += 1
+                    if i < j:
+                        pairs[next_pair, 0] = cdoc[i]
+                        pairs[next_pair, 1] = cdoc[j]
+                        pairs[next_pair, 2] = cdoc[i]
+                        pairs[next_pair, 3] = randids[next_pair]
+                        pairs[next_pair, 4] = 0
+                    else:
+                        pairs[next_pair, 0] = cdoc[j]
+                        pairs[next_pair, 1] = cdoc[i]
+                        pairs[next_pair, 2] = randids[next_pair]
+                        pairs[next_pair, 3] = cdoc[i]
+                        pairs[next_pair, 4] = 1
 
-                    # now sample i
-                    pairs[next_pair, 0] = cdoc[i]
-                    pairs[next_pair, 1] = cdoc[j]
-                    pairs[next_pair, 2] = randids[next_pair]
-                    pairs[next_pair, 3] = cdoc[j]
-                    pairs[next_pair, 4] = 1
                     next_pair += 1
 
     return np.ascontiguousarray(pairs[:next_pair, :])
